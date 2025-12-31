@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trend-devops-app-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: trend-devops-app
+  template:
+    metadata:
+      labels:
+        app: trend-devops-app
+    spec:
+      containers:
+      - name: trend-devops-app
+        image: gowthamps03/trend-app:latest
+        ports:
+        - containerPort: 80
