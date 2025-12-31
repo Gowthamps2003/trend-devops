@@ -2,15 +2,11 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB_CREDENTIALS = 'dockerhub-creds' // Jenkins Docker Hub credentials ID
-        DOCKER_IMAGE = 'gowthamps03/trend-app:latest'
-        KUBECONFIG_CREDENTIALS = 'kubeconfig-creds' // Jenkins credentials for kubeconfig if needed
-        CLUSTER_NAME = 'trend-devops-eks'
-        K8S_NAMESPACE = 'default'
+        DOCKER_HUB_CREDENTIALS = credentials('dockerhub-creds') // Jenkins Docker Hub credentials
+        IMAGE_NAME = "gowthamps03/trend-app:latest"
     }
 
     stages {
-
         stage('Clone Repository') {
             steps {
                 git branch: 'main',
@@ -21,7 +17,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    sh 'docker build -t $DOCKER_IMAGE .'
+                    sh "docker build -t ${IMAGE_NAME} ."
                 }
             }
         }
@@ -29,9 +25,7 @@ pipeline {
         stage('Login to Docker Hub') {
             steps {
                 script {
-                    docker.withRegistry('https://index.docker.io/v1/', "$DOCKERHUB_CREDENTIALS") {
-                        echo "Logged in to Docker Hub"
-                    }
+                    sh "docker login -u ${DOCKER_HUB_CREDENTIALS_USR} -p ${DOCKER_HUB_CREDENTIALS_PSW}"
                 }
             }
         }
@@ -39,9 +33,7 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 script {
-                    docker.withRegistry('https://index.docker.io/v1/', "$DOCKERHUB_CREDENTIALS") {
-                        sh 'docker push $DOCKER_IMAGE'
-                    }
+                    sh "docker push ${IMAGE_NAME}"
                 }
             }
         }
@@ -49,13 +41,9 @@ pipeline {
         stage('Deploy to EKS') {
             steps {
                 script {
-                    // Set kubeconfig if needed via Jenkins credentials
-                    withCredentials([file(credentialsId: "$KUBECONFIG_CREDENTIALS", variable: 'KUBECONFIG_FILE')]) {
-                        sh 'export KUBECONFIG=$KUBECONFIG_FILE'
-                        sh 'kubectl apply -f deployment.yaml'
-                        sh 'kubectl apply -f service.yaml'
-                        sh 'kubectl rollout status deployment/trend-devops-app-deployment'
-                    }
+                    // Apply Kubernetes manifests from repo
+                    sh "kubectl apply -f deployment.yaml"
+                    sh "kubectl apply -f service.yaml"
                 }
             }
         }
@@ -63,10 +51,10 @@ pipeline {
 
     post {
         success {
-            echo 'Deployment to EKS successful!'
+            echo "Build, Push, and Deployment completed successfully!"
         }
         failure {
-            echo 'Build or Deployment failed!'
+            echo "Build or Deployment failed!"
         }
     }
 }
