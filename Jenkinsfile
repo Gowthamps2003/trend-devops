@@ -1,60 +1,25 @@
 pipeline {
-    agent any
+  agent any
 
-    environment {
-        DOCKER_HUB_USERNAME = 'gowthamps03'
-        DOCKER_HUB_CREDENTIALS = credentials('dockerhub-creds') // create this credential in Jenkins
+  stages {
+    stage('Clone') {
+      steps {
+        git 'https://github.com/Gowthamps2003/trend-devops.git'
+      }
     }
 
-    stages {
-
-        stage('Clone Repository') {
-            steps {
-                git branch: 'main',
-                    url: 'https://github.com/Gowthamps2003/trend-devops.git'
-            }
-        }
-
-        stage('Build Docker Image') {
-            steps {
-                script {
-                    sh "docker build -t ${DOCKER_HUB_USERNAME}/trend-app:latest ."
-                }
-            }
-        }
-
-        stage('Login to Docker Hub') {
-            steps {
-                script {
-                    sh "echo ${DOCKER_HUB_CREDENTIALS_PSW} | docker login -u ${DOCKER_HUB_USERNAME} --password-stdin"
-                }
-            }
-        }
-
-        stage('Push Docker Image') {
-            steps {
-                script {
-                    sh "docker push ${DOCKER_HUB_USERNAME}/trend-app:latest"
-                }
-            }
-        }
-
-        stage('Deploy to EKS') {
-            steps {
-                script {
-                    sh "kubectl apply -f deployment.yaml"
-                    sh "kubectl apply -f service.yaml"
-                }
-            }
-        }
+    stage('Build') {
+      steps {
+        sh 'docker build -t gowthamps03/trend-app:latest .'
+      }
     }
 
-    post {
-        success {
-            echo "Build, Push, and Deployment to EKS completed successfully!"
+    stage('Push') {
+      steps {
+        withDockerRegistry([ credentialsId: 'docker-hub-creds', url: '' ]) {
+            sh 'docker push gowthamps03/trend-app:latest'
         }
-        failure {
-            echo "Build or Deployment failed!"
-        }
+      }
     }
+  }
 }
