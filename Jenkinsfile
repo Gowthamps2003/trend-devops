@@ -39,8 +39,7 @@ pipeline {
                 }
             }
         }
-
-
+    } // end of stages
 
     post {
         success {
@@ -50,4 +49,4 @@ pipeline {
             echo 'Build or Deployment failed!'
         }
     }
-}
+} // end of pipeline
