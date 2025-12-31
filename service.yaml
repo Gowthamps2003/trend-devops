@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: trend-devops-app-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: trend-devops-app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
